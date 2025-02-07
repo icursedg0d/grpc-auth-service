@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"grpc/auth/internal/domain/models"
+	"grpc/auth/internal/lib/jwt"
 	"grpc/auth/internal/lib/logger/sl"
 	"grpc/auth/internal/storage"
 	"log/slog"
@@ -36,6 +37,8 @@ type AppProvider interface {
 
 var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
+	ErrInvalidAppId       = errors.New("invalid app id")
+	ErrUserExists         = errors.New("user alredy exists")
 )
 
 // New returns a new instance of the Auth service
@@ -82,7 +85,13 @@ func (a *Auth) Login(ctx context.Context, email string, password string, appID i
 	}
 
 	log.Info("user logged is successfully")
-    
+
+	token, err := jwt.NewToken(user, app, a.tokenTTL)
+	if err != nil {
+		log.Error("failed to generate token", sl.Err(err))
+		return "", fmt.Errorf("%s: %w", op, err)
+	}
+	return token, nil
 }
 
 func (a *Auth) RegisterNewUser(ctx context.Context, email string, password string) (int64, error) {
@@ -100,6 +109,10 @@ func (a *Auth) RegisterNewUser(ctx context.Context, email string, password strin
 
 	id, err := a.usrSaver.SaveUser(ctx, email, passHash)
 	if err != nil {
+		if errors.Is(err, storage.ErrUserExists) {
+			log.Error("user alredy exists", sl.Err(err))
+			return 0, fmt.Errorf("%s: %w", op, ErrUserExists)
+		}
 		log.Error("failed to save user", sl.Err(err))
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
@@ -107,6 +120,22 @@ func (a *Auth) RegisterNewUser(ctx context.Context, email string, password strin
 	return id, nil
 }
 
-func (a *Auth) IsAdmin(ctx context.Context, userID int) (bool, error) {
-	panic("not implemented")
+func (a *Auth) IsAdmin(ctx context.Context, userID int64) (bool, error) {
+	const op = "auth.IsAdmin"
+	log := a.log.With(slog.String("op", op), slog.Int64("user_id", userID))
+
+	log.Info("check if user is admin")
+
+	isAdmin, err := a.usrProvider.IsAdmin(ctx, userID)
+	if err != nil {
+		if errors.Is(err, storage.ErrAppNotFound) {
+			log.Warn("app is not found", sl.Err(err))
+			return false, fmt.Errorf("%s: %w", op, ErrInvalidAppId)
+		}
+		log.Error("failed to check user", sl.Err(err))
+		return false, fmt.Errorf("%s: %w", op, err)
+	}
+
+	log.Info("checked if user is admin", slog.Bool("is_admin", isAdmin))
+	return isAdmin, nil
 }
