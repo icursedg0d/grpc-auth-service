@@ -1,0 +1,13 @@
+services:
+  postgres:
+    container_name: postgres_grpc
+    image: postgres:16.4
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres_grpc
+      PGDATA: /data/postgres
+    volumes:
+      - ./storage/postgres:/data/postgres
+    ports:
+      - "5432:5432"
