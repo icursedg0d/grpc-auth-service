@@ -13,3 +13,10 @@ tasks:
     desc: "start app"
     cmds:
       - go run ./cmd/sso/main.go --config=./config/local.yaml
+
+  migrateTest:
+    aliases:
+      - migrateTest
+    desc: "Migrations db for test"
+    cmds:
+      - go run ./cmd/migrator/main.go --storage-path="postgres://postgres:postgres@localhost:5432/postgres_grpc?sslmode=disable" --migrations-path="./tests/migrations" --migrations-table="migrations_test"

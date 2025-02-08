@@ -29,7 +29,7 @@ func New(storagePath string) (*Storage, error) {
 func (s *Storage) SaveUser(ctx context.Context, email string, passHash []byte) (int64, error) {
 	const op = "storage.postgres.SaveUser"
 
-	stmt, err := s.db.Prepare("INSERT INTO users(email, pass_hash) VALUES(?, ?)")
+	stmt, err := s.db.Prepare("INSERT INTO users(email, pass_hash) VALUES($1, $2) RETURNING id")
 	if err != nil {
 		return 0, fmt.Errorf("%s: %w", op, err)
 	}
@@ -52,7 +52,7 @@ func (s *Storage) SaveUser(ctx context.Context, email string, passHash []byte) (
 func (s *Storage) User(ctx context.Context, email string) (models.User, error) {
 	const op = "storage.postgres.User"
 
-	stmt, err := s.db.Prepare("SELECT id, email, pass_hash FROM users WHERE email == ?")
+	stmt, err := s.db.Prepare("SELECT id, email, pass_hash FROM users WHERE email = $1")
 	if err != nil {
 		return models.User{}, fmt.Errorf("%s: %w", op, err)
 	}
@@ -95,7 +95,7 @@ func (s *Storage) IsAdmin(ctx context.Context, userID int64) (bool, error) {
 func (s *Storage) App(ctx context.Context, id int) (models.App, error) {
 	const op = "storage.postgres.App"
 
-	stmt, err := s.db.Prepare("SELECT id, name, secret FROM apps WHERE id = ?")
+	stmt, err := s.db.Prepare("SELECT id, name, secret FROM apps WHERE id = $1")
 	if err != nil {
 		return models.App{}, fmt.Errorf("%s: %w", op, err)
 	}

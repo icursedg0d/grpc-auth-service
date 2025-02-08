@@ -81,6 +81,7 @@ func (a *Auth) Login(ctx context.Context, email string, password string, appID i
 
 	app, err := a.appProvider.App(ctx, appID)
 	if err != nil {
+		log.Error("failed to get app", sl.Err(err))
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
 
@@ -88,7 +89,6 @@ func (a *Auth) Login(ctx context.Context, email string, password string, appID i
 
 	token, err := jwt.NewToken(user, app, a.tokenTTL)
 	if err != nil {
-        
 		log.Error("failed to generate token", sl.Err(err))
 		return "", fmt.Errorf("%s: %w", op, err)
 	}
