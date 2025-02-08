@@ -1,9 +1,15 @@
 version: "3"
 
 tasks:
-  generate:
+  migrate:
     aliases:
       - migrate
     desc: "Migrations db"
     cmds:
       - go run ./cmd/migrator/main.go --storage-path="postgres://postgres:postgres@localhost:5432/postgres_grpc?sslmode=disable" --migrations-path="./migrations" --migrations-table="custom_migrations"
+  start:
+    aliases:
+      - start
+    desc: "start app"
+    cmds:
+      - go run ./cmd/sso/main.go --config=./config/local.yaml
